@@ -1,5 +1,6 @@
 from csv import reader, writer
-from os import name as osname, system, path
+from os import name as osname, system
+from os.path import exists
 from datetime import datetime, timedelta
 # Ruta al archivo CSV
 RUTA_ARCHIVO = "nuevo_usuarioh.csv"
@@ -129,8 +130,8 @@ def mostrar_reservas():
     limpiar_pantalla()
     print('''***RESERVACIONES***''')
     with open(RUTA_ARCHIVO, mode="r") as archivo_csv:
-        lector_csv = reader(archivo_csv)
         num_fila:int = 0
+        lector_csv = reader(archivo_csv)
         for fila in lector_csv:
             print(f"Reserva {num_fila + 1}: [Cliente: {fila[0]} {fila[1]}, Cedula: {fila[2]}, Edad: {fila[3]}, Tel: {fila[4]}, FE: {fila[5]}, FS: {fila[6]}, Hab: #{fila[7]}]")
             num_fila += 1
@@ -179,7 +180,7 @@ def prepararReserva():
 
 #Funcion para verificar si el archivo existe
 def verificar_archivo():
-    archivo_existe = path.exists(RUTA_ARCHIVO)
+    archivo_existe = exists(RUTA_ARCHIVO)
     if not archivo_existe:
         with open(RUTA_ARCHIVO, 'w', newline='') as file:
             writer(file)
