@@ -1,5 +1,5 @@
-import csv
-from os import name as osname, system
+from csv import reader, writer
+from os import name as osname, system, path
 from datetime import datetime, timedelta
 # Ruta al archivo CSV
 RUTA_ARCHIVO = "nuevo_usuarioh.csv"
@@ -7,7 +7,7 @@ FORMATO_FECHA = "%d/%m/%Y"
 # Función para verificar si un número de habitación existe en el archivo CSV
 def verificar_existencia(num_hab, fecha_entrada, fecha_salida):
     with open(RUTA_ARCHIVO, mode="r") as archivo_csv:
-        lector_csv = csv.reader(archivo_csv)
+        lector_csv = reader(archivo_csv)
         for fila in lector_csv:
             fecha_final_csv = datetime.strptime(fila[6], FORMATO_FECHA)
             fecha_inicial_csv = datetime.strptime(fila[5], FORMATO_FECHA)
@@ -18,14 +18,29 @@ def verificar_existencia(num_hab, fecha_entrada, fecha_salida):
     return False
 
 
-def validar_fecha(texto):
+def validar_fecha_entrada(texto):
     fecha = "01/01/2024"
     while True:
         try:
              fecha = input(texto)
              d = datetime.strptime(fecha, FORMATO_FECHA)
-             if d < datetime.now() - timedelta(days=1):
+             if d < (datetime.now() - timedelta(days=1)):
                  print("Por favor ingrese una fecha posterior al dia de hoy.")
+                 continue
+             break
+        except ValueError:
+            print("Por ingrese una fecha con el formato día/mes/año, ejemplo: 24/07/1995")
+    return fecha
+
+def validar_fecha_salida(texto, fecha_entrada):
+    fecha = "02/01/2024"
+    while True:
+        try:
+             fecha = input(texto)
+             fs = datetime.strptime(fecha, FORMATO_FECHA)
+             fe = datetime.strptime(fecha_entrada, FORMATO_FECHA)
+             if fe >= fs:
+                 print(f"Por favor ingrese una fecha posterior al {fecha_entrada}")
                  continue
              break
         except ValueError:
@@ -49,7 +64,7 @@ def validar_texto(mensaje):
     while True:
         try:
             texto = input(mensaje)
-            if texto is "":
+            if texto == "":
                 raise ValueError
             else: break
         except ValueError:
@@ -63,23 +78,9 @@ def obtener_info_usuario():
     cedula = validar_texto("Ingrese cédula: ")
     edad = validar_entero("Ingrese edad: ")
     telf = validar_texto("Ingrese teléfono: ")
-    fecha_entrada = validar_fecha("Ingrese fecha de entrada: ")
-    fecha_salida = validar_fecha("Ingrese fecha de salida: ")
-    while(fecha_salida < fecha_entrada):
-        print("Por favor ingresa una fecha de salida posterior a la de entrada.")
-        fecha_salida = validar_fecha("Ingrese fecha de salida: ")
+    fecha_entrada = validar_fecha_entrada("Ingrese la fecha de entrada: ")
+    fecha_salida = validar_fecha_salida("Ingrese la fecha de salida: ", fecha_entrada)
     return nombre, apellido, cedula, edad, telf, fecha_entrada, fecha_salida
-
-# Función para calcular los días transcurridos entre dos fechas
-def dias_transcurridos(fecha_inicial, fecha_final):
-    try:
-        fecha1 = datetime.strptime(fecha_inicial, FORMATO_FECHA)
-        fecha2 = datetime.strptime(fecha_final, FORMATO_FECHA)
-        diferencia_dias = fecha2 - fecha1
-        return diferencia_dias.days
-    except ValueError:
-        print("Por favor ingrese la fecha en el formato día/mes/año, ejemplo: 24/07/1995")
-        return None
 
 # Función para obtener el número de habitación deseado
 def obtener_numero_habitacion(fecha_entrada, fecha_salida):
@@ -97,40 +98,39 @@ def obtener_numero_habitacion(fecha_entrada, fecha_salida):
 # Función para guardar la reservacion en el archivo CSV
 def hacer_reserva(usuario_reserva):
     with open(RUTA_ARCHIVO, mode="a", newline="") as archivo_csv:
-        escritor_csv = csv.writer(archivo_csv)
+        escritor_csv = writer(archivo_csv)
         escritor_csv.writerow(usuario_reserva)
 
 def borrar_reserva():
     num_fila = int(mostrar_reservas())
-    newData = list()
+    nuevoRegistro = list()
     registro:int = -1
-    newNum_Fila = 0
     while registro > num_fila or registro < 0:
         registro = validar_entero("¿Cual reserva desea borrar? (solo el numero) - 0: Para volver al menu. ")
     
     if registro != 0:
         with open(RUTA_ARCHIVO, mode="r") as archivo_csv:
-            lector_csv = csv.reader(archivo_csv)
-            print("BORRANDO REGISTRO NUM: ",registro)
-            #escritor_csv = csv.writer(archivo_csv)
+            lector_csv = reader(archivo_csv)
+            print(f"Borrando registro #:{registro}")
+            newNum_Fila:int = 0
             for fila in lector_csv:
                 if newNum_Fila != registro-1:
-                    newData.append(fila)
+                    nuevoRegistro.append(fila)
                 newNum_Fila = newNum_Fila + 1                    
         
         with open(RUTA_ARCHIVO, mode="w+", newline='') as archivo_csv:
             archivo_csv.truncate()
-            escritor_csv = csv.writer(archivo_csv)
-            escritor_csv.writerows(newData)
+            escritor_csv = writer(archivo_csv)
+            escritor_csv.writerows(nuevoRegistro)
 
         print("Reserva borrada exitosamente.")
 
 def mostrar_reservas():
     limpiar_pantalla()
-    num_fila = 0
     print('''***RESERVACIONES***''')
     with open(RUTA_ARCHIVO, mode="r") as archivo_csv:
-        lector_csv = csv.reader(archivo_csv)
+        lector_csv = reader(archivo_csv)
+        num_fila:int = 0
         for fila in lector_csv:
             print(f"Reserva {num_fila + 1}: [Cliente: {fila[0]} {fila[1]}, Cedula: {fila[2]}, Edad: {fila[3]}, Tel: {fila[4]}, FE: {fila[5]}, FS: {fila[6]}, Hab: #{fila[7]}]")
             num_fila += 1
@@ -166,29 +166,25 @@ def menu():
         elif opcion == "r" or opcion == "reservar":
             prepararReserva()
             input("Presione Enter para volver al menu principal")
-        else:
-            continue
 
 def prepararReserva():
     limpiar_pantalla()
-    with open(RUTA_ARCHIVO, 'a', newline='') as file:
-        writer = csv.writer(file)
+
     nombre, apellido, cedula, edad, telf, fecha_entrada, fecha_salida = obtener_info_usuario()
-    diferencia_dias = dias_transcurridos(fecha_entrada, fecha_salida)
-    
-    if diferencia_dias is not None:
-        num_hab = obtener_numero_habitacion(fecha_entrada, fecha_salida)
+    num_hab = obtener_numero_habitacion(fecha_entrada, fecha_salida)
+    reserva = [nombre, apellido, cedula, edad, telf, fecha_entrada, fecha_salida, num_hab]
 
-        reserva = [
-            nombre, apellido, cedula, edad, telf, fecha_entrada, fecha_salida, num_hab
-        ]
+    hacer_reserva(reserva)
+    print(f"Reserva realizada exitosamente. La fecha de entrada es {fecha_entrada} 10:00am y la de salida es {fecha_salida} 9:00am.")
 
-        hacer_reserva(reserva)
-        print(f"Reserva realizada exitosamente. La fecha de entrada es {fecha_entrada} 10:00am y la de salida es {fecha_salida} 9:00am.")
+#Funcion para verificar si el archivo existe
+def verificar_archivo():
+    archivo_existe = path.exists(RUTA_ARCHIVO)
+    if not archivo_existe:
+        with open(RUTA_ARCHIVO, 'w', newline='') as file:
+            writer(file)
 
-# Función principal
-def main():
-    menu()
 
 if __name__ == "__main__":
-    main()
+    verificar_archivo()
+    menu()
