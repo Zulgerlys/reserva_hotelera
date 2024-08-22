@@ -23,7 +23,7 @@ def hacer_reserva(usuario_reserva):
         escritor_csv.writerow(usuario_reserva)
 
 def borrar_reserva():
-    num_fila = int(mostrar_reservas())
+    num_fila:int = mostrar_reservas()
     nuevoRegistro = list()
     registro:int = -1
     while registro > num_fila or registro < 0:
